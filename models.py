@@ -2,8 +2,17 @@ from django.db import models
 
 
 PUB_TYPE_CHOICES = [
- ('a', 'type a'),
- ('b', 'type b'),
+    ('A', 'Book',),
+    ('B', 'Book series',),
+    ('C', 'Briefs',),
+    ('D', 'Conference Proceedings',),
+    ('E', 'Journal',),
+    ('F', 'Magazine',),
+    ('G', 'Monograph Series',),
+    ('H', 'Monograph',),
+    ('I', 'Research reports',),
+    ('J', 'Working Papers',),
+    ('Z', 'Other',),
 ]
 
 
