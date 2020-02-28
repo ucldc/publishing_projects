@@ -47,11 +47,16 @@ class Project(models.Model):
     distributor = models.CharField(
         max_length=200,
         help_text='books only',
+        blank=True,
     )
     issn = models.CharField(
         max_length=200,
         help_text='journals only',
+        blank=True,
     )
+
+    def __str__(self):
+        return self.publication_name
 
 #class Book():
 #    distributor
