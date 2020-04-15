@@ -7,7 +7,7 @@ from google.auth.transport.requests import Request
 
 from django.core.management.base import BaseCommand
 from django.db.models import Q
-from publishing_projects.models import PublishingProgram, Project, Subject
+from publishing_projects.models import PublishingProgram, Project, Subject, PublicationType
 from pprint import pprint as pp
 import lxml.etree as ET
 import os
@@ -27,7 +27,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 # The ID and range of a sample spreadsheet.
 # https://docs.google.com/spreadsheets/d/17Md7PxQ34ZGBE2geHV2lpnA0bPurIVejbE4IgldmuFI/edit#gid=139692784
 SAMPLE_SPREADSHEET_ID = '17Md7PxQ34ZGBE2geHV2lpnA0bPurIVejbE4IgldmuFI'
-SAMPLE_RANGE_NAME = 'All publications!A:W'
+SAMPLE_RANGE_NAME = 'All publications!A:Y'
 
 def main():
     """Shows basic usage of the Sheets API.
@@ -59,38 +59,48 @@ def main():
     # Call the Sheets API
     sheet = service.spreadsheets()
     result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                range=SAMPLE_RANGE_NAME).execute()
+                                range=SAMPLE_RANGE_NAME,
+                                valueRenderOption='FORMATTED_VALUE',).execute()
     values = result.get('values', [])
 
     if not values:
         print('No data found.')
     else:
-        for row in values:
-            print(row[-1].split(','))
-            for s in row[-1].split(','):
-                ss = Subject.objects.get_or_create(name=s.strip())
-                print(ss)
+        for row in values[1:]:
+            print(row)
+            # eat the two off the back
+            row.pop()
+            row.pop()
             # ['Unit_ID'0 'Project_ID'1 'Unit + Campus'2 'Unit'3 'Campus'4 'Publication'5 'Type'6 'Other?'7 'Publisher/Platform'8 'Owned ', 'ISSN', 'ISBN', 'Open Access Y/N', 'Cost, if not', 'Website', 'Department 1', 'Department 2']
             # Print columns A and E, which correspond to indices 0 and 4.
             unit_id = row.pop(0)
+            
             project_id = row.pop(0)
             # skip 2, 3
             row.pop(0)
             row.pop(0)
             campus = row.pop(0)
-            publication = row.pop(0)
+            publication = row.pop(0) # 5
+            type_v = row.pop(0)
+            other_v = row.pop(0)
+            type_s = type_v if type_v != 'Other' else other_v
+            subjects = row.pop(-2)
             notes = '\n\r'.join(row)
-            #print(unit_id, project_id, campus, publication)
-            #print(row)
-            try:
-                #this_row = Project.objects.create(id=project_id, publication_name=publication, notes=notes)
-                #parent_program = PublishingProgram.objects.get(id=unit_id)
-                #parent_program.projects.add(this_row)
-                pass
-            except ValueError:
-                pass
-            #print(notes)
-            #print('%s, %s' % (row[0], row[4]))
+            parent_program = PublishingProgram.objects.get(id=unit_id)
+            project_type = PublicationType.objects.get_or_create(name=type_s)[0]
+            add_this_row(project_id, parent_program, project_type, publication, notes, subjects)
+
+
+def add_this_row(project_id, program, publication_type, publication_name, notes, subjects):
+        this_row = Project.objects.get_or_create(id=project_id,
+                                          program=program,
+                                          publication_type=publication_type,
+                                          publication_name=publication_name,
+                                          notes=notes)[0]
+        for s in subjects.split(','):
+            ss = Subject.objects.get_or_create(name=s.strip())[0]
+            this_row.subject.add(ss)
+
 
 if __name__ == '__main__':
     main()
