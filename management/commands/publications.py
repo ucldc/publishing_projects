@@ -67,7 +67,6 @@ def main():
         print('No data found.')
     else:
         for row in values[1:]:
-            print(row)
             # eat the two off the back
             row.pop()
             row.pop()
@@ -81,25 +80,32 @@ def main():
             row.pop(0)
             campus = row.pop(0)
             publication = row.pop(0) # 5
-            type_v = row.pop(0)
-            other_v = row.pop(0)
+            type_v = row.pop(0) #6
+            other_v = row.pop(0) #7
             type_s = type_v if type_v != 'Other' else other_v
+            publisher_platform = row.pop(0).replace('\n', ' ¶ ') #8
             subjects = row.pop(-2)
             notes = '\n\r'.join(row)
+            url = row[5].partition('\n')[0]
+            print(row)
             parent_program = PublishingProgram.objects.get(id=unit_id)
             project_type = PublicationType.objects.get_or_create(name=type_s)[0]
-            add_this_row(project_id, parent_program, project_type, publication, notes, subjects)
+            add_this_row(project_id, parent_program, project_type, publication, url, notes, publisher_platform, subjects)
 
 
-def add_this_row(project_id, program, publication_type, publication_name, notes, subjects):
+def add_this_row(project_id, program, publication_type, publication_name, url, notes, publishing_partner, subjects):
         this_row = Project.objects.get_or_create(id=project_id,
                                           program=program,
                                           publication_type=publication_type,
                                           publication_name=publication_name,
+                                          publishing_partner=publishing_partner,
+                                          url=url,
                                           notes=notes)[0]
         for s in subjects.split(','):
-            ss = Subject.objects.get_or_create(name=s.strip())[0]
-            this_row.subject.add(ss)
+            clean_name = s.strip()
+            if clean_name:
+                ss = Subject.objects.get_or_create(name=s.strip())[0]
+                this_row.subject.add(ss)
 
 
 if __name__ == '__main__':

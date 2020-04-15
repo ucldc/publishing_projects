@@ -12,7 +12,10 @@ from .models import (
 
 admin.site.register(Campus)
 admin.site.register(Contact)
-admin.site.register(Subject)
+@admin.register(Subject)
+class SubjectAdmin(admin.ModelAdmin):
+    ordering = ['name']
+
 admin.site.register(PublicationType)
 
 
@@ -26,9 +29,6 @@ class ProjectAdmin(admin.ModelAdmin):
     search_fields = [
         "publication_name",
         "program__name",
-        "contact",
-        "subject",
-        "program",
     ]
     list_filter = (
         "program__campus__name",
@@ -51,3 +51,4 @@ class PublishingProgramAdmin(admin.ModelAdmin):
     ]
     list_filter = ("campus__name",)
     inlines = [ProjectInline]
+    filter_horizontal = ('campus',)
