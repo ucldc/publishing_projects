@@ -14,7 +14,7 @@ import os
 
 
 class Command(BaseCommand):
-    help = "Describe the Command Here"
+    help = "run first (after migrations) to load units "
 
     def handle(self, **options):
         # for collection in Collection.objects.filter(harvest_type='OAC'):

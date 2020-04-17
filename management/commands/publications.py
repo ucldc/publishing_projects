@@ -8,6 +8,7 @@ from google.auth.transport.requests import Request
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 from publishing_projects.models import (
+    Contact,
     PublishingProgram,
     Project,
     Subject,
@@ -16,15 +17,13 @@ from publishing_projects.models import (
 from pprint import pprint as pp
 import lxml.etree as ET
 import os
+import re
 
 
 class Command(BaseCommand):
-    help = "Describe the Command Here"
+    help = "main loading script for publications inventory "
 
     def handle(self, **options):
-        # for collection in Collection.objects.filter(harvest_type='OAC'):
-        #    process_collection(collection)
-        print("hey!~!")
         main()
 
 
@@ -84,23 +83,33 @@ def main():
             row.pop()
             row.pop()
             # ['Unit_ID'0 'Project_ID'1 'Unit + Campus'2 'Unit'3 'Campus'4 'Publication'5 'Type'6 'Other?'7 'Publisher/Platform'8 'Owned ', 'ISSN', 'ISBN', 'Open Access Y/N', 'Cost, if not', 'Website', 'Department 1', 'Department 2']
-            # Print columns A and E, which correspond to indices 0 and 4.
-            unit_id = row.pop(0)
 
+            # ids for the project
+            unit_id = row.pop(0)
             project_id = row.pop(0)
+
             # skip 2, 3
             row.pop(0)
             row.pop(0)
+
+            # ugly etl mapping
             campus = row.pop(0)
             publication = row.pop(0)  # 5
             type_v = row.pop(0)  # 6
             other_v = row.pop(0)  # 7
             type_s = type_v if type_v != "Other" else other_v
             publisher_platform = row.pop(0).replace("\n", " ¶ ")  # 8
+            # 17 18 <-- contact 1; 19 20 <-- contact 2; (except, minus the 8 pops above)
+            key_contact_1 = process_contact(row[8], row[9])
+            key_contact_2 = process_contact(row[10], row[11])
+            contacts = [ ]
+            if key_contact_1 is not None:
+                contacts.append(key_contact_1)
+            if key_contact_2 is not None:
+                contacts.append(key_contact_2)
             subjects = row.pop(-2)
-            notes = "\n\r".join(row)
+            notes = "\n".join(row)
             url = row[5].partition("\n")[0]
-            print(row)
             parent_program = PublishingProgram.objects.get(id=unit_id)
             project_type = PublicationType.objects.get_or_create(name=type_s)[0]
             add_this_row(
@@ -109,10 +118,48 @@ def main():
                 project_type,
                 publication,
                 url,
+                contacts,
                 notes,
                 publisher_platform,
+                fish_platform(publisher_platform),
                 subjects,
             )
+
+
+def fish_email(string):
+    """grap the first email out of some text """
+    match = re.search(r'[\w\.-]+@[\w\.-]+', string)
+    return match.group(0) if match else None
+
+
+def fish_name(string):
+    """grab some capatlized words from a name field """
+    match = re.findall(r'[A-Z]\w+', string)
+    return " ".join(match) if match else None
+
+
+def fish_platform(string):
+    """ analyze publishing_partner to determine platform """
+    if 'self-published' in string:
+        return 'S'
+    elif 'escholarship' in string:
+        return 'E'
+    elif 'UC Press' in string:
+        return 'U'
+    else:
+        return 'O'
+
+
+def process_contact(field1, role):
+    if not(field1) and not(role):
+        return None
+    email = fish_email(field1)
+    name = fish_name(field1)
+    return Contact.objects.get_or_create(
+        email=email,
+        name=name,
+        notes=f"{field1}\n{role}",
+    )[0]
 
 
 def add_this_row(
@@ -121,8 +168,10 @@ def add_this_row(
     publication_type,
     publication_name,
     url,
+    contacts,
     notes,
     publishing_partner,
+    platform,
     subjects,
 ):
     this_row = Project.objects.get_or_create(
@@ -131,6 +180,7 @@ def add_this_row(
         publication_type=publication_type,
         publication_name=publication_name,
         publishing_partner=publishing_partner,
+        platform=platform,
         url=url,
         notes=notes,
     )[0]
@@ -139,6 +189,8 @@ def add_this_row(
         if clean_name:
             ss = Subject.objects.get_or_create(name=s.strip())[0]
             this_row.subject.add(ss)
+    for c in contacts:
+        this_row.contact.add(c)
 
 
 if __name__ == "__main__":

@@ -32,6 +32,7 @@ class ProjectAdmin(admin.ModelAdmin):
     ]
     list_filter = (
         "program__campus__name",
+        "platform",
         "publication_type__name",
         "subject__name",
     )
