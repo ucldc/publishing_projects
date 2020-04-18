@@ -16,6 +16,9 @@ class Campus(models.Model):
     name = models.CharField(max_length=40, unique=True, verbose_name="Campus")
     notes = models.TextField(blank=True)
 
+    class Meta:
+        verbose_name_plural = "Campuses"
+
     def __str__(self):
         return str(self.name)
 
