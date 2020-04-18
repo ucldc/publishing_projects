@@ -11,12 +11,38 @@ from .models import (
 )
 
 admin.site.register(Campus)
-admin.site.register(Contact)
+admin.site.register(PublicationType)
+
+
+class ContactProjectInline(admin.TabularInline):
+    # model = Project
+    extra = 1
+    model = Project.contact.through
+    show_change_link = True
+    # fields = ("project__publication_name", "project__publication_type")
+    #readonly_fields = ("publication_name", "publication_type")
+
+
+class ProgramProjectInline(admin.StackedInline):
+    model = Project
+    show_change_link = True
+    fields = ("publication_name", "publication_type")
+    readonly_fields = ("publication_name", "publication_type")
+
+
+@admin.register(Contact)
+class ContatAdmin(admin.ModelAdmin):
+    inlines = [ContactProjectInline]
+    search_fields = [
+        "name",
+        "email",
+        "notes"
+    ]
+
+
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
     ordering = ['name']
-
-admin.site.register(PublicationType)
 
 
 @admin.register(Project)
@@ -38,18 +64,11 @@ class ProjectAdmin(admin.ModelAdmin):
     )
 
 
-class ProjectInline(admin.StackedInline):
-    model = Project
-    show_change_link = True
-    fields = ("publication_name", "publication_type")
-    readonly_fields = ("publication_name", "publication_type")
-
-
 @admin.register(PublishingProgram)
 class PublishingProgramAdmin(admin.ModelAdmin):
     search_fields = [
         "name",
     ]
     list_filter = ("campus__name",)
-    inlines = [ProjectInline]
+    inlines = [ProgramProjectInline]
     filter_horizontal = ('campus',)

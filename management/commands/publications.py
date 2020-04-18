@@ -151,6 +151,7 @@ def fish_platform(string):
 
 
 def process_contact(field1, role):
+    """ return a contact object, given the two fields from the sheet """
     if not(field1) and not(role):
         return None
     email = fish_email(field1)
@@ -174,6 +175,7 @@ def add_this_row(
     platform,
     subjects,
 ):
+    """ function that creates the Project object and set up relationships """
     this_row = Project.objects.get_or_create(
         id=project_id,
         program=program,
@@ -183,13 +185,15 @@ def add_this_row(
         platform=platform,
         url=url,
         notes=notes,
-    )[0]
+    )[0]  # [1] indicates if this this was got or created
     for s in subjects.split(","):
+        # `subjects` is a string like "Subject 1, subject 2"
         clean_name = s.strip()
         if clean_name:
-            ss = Subject.objects.get_or_create(name=s.strip())[0]
+            ss = Subject.objects.get_or_create(name=clean_name.title())[0]
             this_row.subject.add(ss)
     for c in contacts:
+        # contacts are processed above
         this_row.contact.add(c)
 
 

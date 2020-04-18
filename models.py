@@ -71,7 +71,7 @@ class Project(models.Model):
     publishing_partner = models.CharField(max_length=200, blank=True,)
 
     url = models.URLField(blank=True)
-    contact = models.ManyToManyField(Contact, verbose_name="Contact", blank=True)
+    contact = models.ManyToManyField(Contact, verbose_name="Contact", related_name="projects", blank=True)
     subject = models.ManyToManyField(Subject, verbose_name="Subject", blank=True)
 
     notes = models.TextField(blank=True)
