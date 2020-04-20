@@ -4,6 +4,8 @@ django app to collect a database of publishing projects systemwide at UC
 
 Designed to be installed inside of https://github.org/ucldc/avram
 
+![PNG of schema](publishing_projects.png)
+
 #
 These commands need to be run from the "host" django app
 
