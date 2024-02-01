@@ -65,11 +65,12 @@ class Project(models.Model):
         (OTHER, "Other"),
         (SELFPUBLISHED, "Self-Published"),
     ]
-    program = models.ForeignKey(PublishingProgram, verbose_name="Unit with activity")
+    program = models.ForeignKey(
+        PublishingProgram, verbose_name="Unit with activity", on_delete=models.PROTECT)
     publication_name = models.CharField(
         max_length=200, help_text="name of the publication", blank=True,
     )
-    publication_type = models.ForeignKey(PublicationType, blank=True,)
+    publication_type = models.ForeignKey(PublicationType, blank=True, on_delete=models.PROTECT)
     platform = models.CharField(max_length=1, choices=PLATFORM_CHOICES, default=OTHER,)
     publishing_partner = models.CharField(max_length=200, blank=True,)
 
